@@ -30,6 +30,7 @@ class BodyPartData:
         radlex_id (str): Main identifier for the object
         description (str): Preferred term for the concept (from RadLe)
         contained_by_id (str): Parent object in the anatomic location hierarchy
+        common_id (str, optional): Common identifier for the object. Defaults to None.
         codes (Iterable[Dict[str, str]], optional): List of codes for the concept, where each
                 element is a dict like {"system": "SNOMED", "code": "xxxxxx"}. Defaults to None.
         synonyms (Iterable[str], optional): List of synonyms for the concept. Defaults to None.
@@ -44,6 +45,7 @@ class BodyPartData:
     radlex_id: str
     description: str = field(hash=False, compare=False)
     contained_by_id: str = field(hash=False, compare=False)
+    common_id: Optional[str] = field(default=None, hash=False, compare=False)
     codes: Optional[Iterable[Code]] = field(default=None, hash=False, compare=False)
     synonyms: Optional[List[str]] = field(default=None, hash=False, compare=False)
     unsided_id: Optional[str] = field(default=None, hash=False, compare=False)
@@ -60,7 +62,7 @@ class BodyPartData:
         """Generate arguments for BodyPartData constructor from a JSON dict.
 
         Args:
-            body_part_dict (Dict): JSON dict with keys "radlex_id", "description", "contained_by_id",
+            body_part_dict (Dict): JSON dict with keys "radlex_id", "description", "contained_by_id", "common_id"
                 "codes", "synonyms", "unsided_id", "left_id", "right_id", "part_of_id", and "sex_specific".
 
         Returns:
@@ -91,6 +93,8 @@ class BodyPartData:
             kwargs['part_of_id'] = body_part_dict['partOfId']
         if 'sexSpecific' in body_part_dict:
             kwargs['sex_specific'] = body_part_dict['sexSpecific']
+        if 'common_id' in body_part_dict:
+            kwargs['common_id'] = body_part_dict['common_id']
         return (args, kwargs)
 
 
@@ -114,6 +118,7 @@ class BodyPart(BodyPartData):
         radlex_id: str,
         description: str,
         contained_by_id: str,
+        common_id: Optional[str] = None,
         /,
         codes: Optional[Iterable[Code]] = None,
         synonyms: Optional[Iterable[str]] = None,
@@ -129,6 +134,7 @@ class BodyPart(BodyPartData):
             radlex_id (str): Main identifier for the object
             description (str): Preferred term for the concept (from RadLe)
             contained_by_id (str): Parent object in the anatomic location hierarchy
+            common_id (str, optional): Common identifier for the object. Defaults to None.
             index (BodyPartIndex-like): Typically a BodyPartIndex, but can be anything that offers "get_by_id" and
                    "get_all_body_parts" methods.
             codes (Iterable[Code], optional): List of codes for the concept, where each
@@ -148,6 +154,7 @@ class BodyPart(BodyPartData):
             radlex_id=radlex_id,
             description=description,
             contained_by_id=contained_by_id,
+            common_id=common_id,
             codes=codes,
             synonyms=synonyms,
             unsided_id=unsided_id,
@@ -162,7 +169,12 @@ class BodyPart(BodyPartData):
                     f'index must be a BodyPartIndex or at least implement {method}() (got {index})'
                 )
         self._index: Index = index
-
+    
+    @cached_property
+    def common_id(self) -> int:
+        """Returns the common identifier for the body part."""
+        return self.common_id
+    
     @cached_property
     def contained_by(self) -> 'BodyPart':
         """BodyPart: Parent object in the anatomic location (contained by) hierarchy"""
@@ -259,3 +271,4 @@ class BodyPart(BodyPartData):
                 if code.system == 'SNOMED':
                     return code.code
         return None
+ 

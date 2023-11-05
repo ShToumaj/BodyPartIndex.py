@@ -20,7 +20,7 @@ class BodyPartIndex:
 
     # TODO: Add ability to add local codes and synonyms
     def __init__(
-        self, json_data: Optional[Dict] = None, json_filename: Optional[str] = None
+        self, json_data: Optional[Dict] = None, json_filename: Optional[str] = None, local_codes: Optional[Dict] = None
     ) -> None:
         if BodyPartIndex.__the_instance is not None:
             raise Exception(
@@ -33,7 +33,7 @@ class BodyPartIndex:
                 )
             else:
                 json_data = self._get_json_data_from_file(json_filename)
-        self._initialize(json_data)
+        self._initialize(json_data, local_codes)
         BodyPartIndex.__the_instance = self
 
     @staticmethod
@@ -98,13 +98,17 @@ class BodyPartIndex:
         for code in body_part.codes:
             add_to_text_index(code.code, body_part)
 
-    def _initialize(self, json_data: Dict) -> None:
+    def _initialize(self, json_data: Dict, local_codes: Optional[Dict] = None) -> None:
         self.__index: Dict[str, BodyPart] = {}
         self.__code_index: Dict[Code, BodyPart] = {}
         self.__code_text_index: Dict[str, BodyPart] = {}
         self.__text_index: Dict[str, List[BodyPart]] = {}
         for body_part_dict in json_data['bodyParts']:
             (args, kwargs) = BodyPartData.params_from_json_dict(body_part_dict)
+            radlex_id = body_part_dict["radlexId"]
+            if local_codes and radlex_id in local_codes:
+                kwargs["common_id"] = local_codes[radlex_id]["Common ID"]
+                kwargs["local_id"] = local_codes[radlex_id]["local_code"]
             body_part: BodyPart = BodyPart(self, *args, **kwargs)
             if id in self.__index:
                 raise Exception(f'Duplicate BodyPart with ID {id}')
